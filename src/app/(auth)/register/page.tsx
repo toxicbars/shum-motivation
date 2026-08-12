@@ -46,35 +46,30 @@ export default function RegisterPage() {
       return
     }
 
-    // Если подтверждение почты включено
     if (data.user && !data.session) {
       setSuccess(true)
       setLoading(false)
       return
     }
 
-    // Если подтверждение отключено — сразу входим
     router.push('/dashboard')
     router.refresh()
   }
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <div className="max-w-md w-full bg-white rounded-xl shadow-md p-8 text-center">
+      <div className="min-h-screen bg-[#26264A] flex items-center justify-center px-4">
+        <div className="max-w-md w-full bg-white/5 border border-white/10 rounded-2xl p-8 text-center">
           <div className="text-5xl mb-4">📧</div>
-          <h1 className="text-2xl font-bold mb-3">Проверьте почту</h1>
-          <p className="text-gray-600 mb-6">
-            Мы отправили письмо на <strong>{email}</strong>.
+          <h1 className="text-2xl font-bold text-white mb-3">Проверьте почту</h1>
+          <p className="text-white/60 mb-6">
+            Мы отправили письмо на <strong className="text-white">{email}</strong>.
             <br />
-            Перейдите по ссылке в письме, чтобы подтвердить аккаунт.
-          </p>
-          <p className="text-sm text-gray-500 mb-6">
-            Не пришло письмо? Проверьте папку «Спам».
+            Перейдите по ссылке, чтобы подтвердить аккаунт.
           </p>
           <Link
             href="/login"
-            className="inline-block bg-blue-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition"
+            className="inline-block bg-[#FF1493] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#ff2d9e] transition"
           >
             Перейти ко входу
           </Link>
@@ -84,75 +79,75 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-md p-8">
-        <h1 className="text-2xl font-bold text-center mb-2">Регистрация</h1>
-        <p className="text-center text-gray-500 text-sm mb-6">
-          Создайте аккаунт, чтобы участвовать в программах
-        </p>
+    <div className="min-h-screen bg-[#26264A] flex items-center justify-center px-4 relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#FF1493] opacity-20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
 
-        <form onSubmit={handleRegister} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              ФИО
-            </label>
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Иванов Иван Иванович"
-            />
-          </div>
+      <div className="relative z-10 w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="text-4xl font-black tracking-tight text-white mb-1">ШУМ</div>
+          <p className="text-white/50 text-sm">проект от росмолодёжь</p>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="you@example.com"
-            />
-          </div>
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
+          <h1 className="text-2xl font-bold text-white text-center mb-6">Регистрация</h1>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Пароль
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Минимум 6 символов"
-            />
-          </div>
-
-          {error && (
-            <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">
-              {error}
+          <form onSubmit={handleRegister} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-white/70 mb-1.5">ФИО</label>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+                className="w-full px-4 py-3 bg-white/5 border border-white/15 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF1493] transition"
+                placeholder="Иванов Иван Иванович"
+              />
             </div>
-          )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition"
-          >
-            {loading ? 'Регистрируем...' : 'Зарегистрироваться'}
-          </button>
-        </form>
+            <div>
+              <label className="block text-sm font-medium text-white/70 mb-1.5">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full px-4 py-3 bg-white/5 border border-white/15 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF1493] transition"
+                placeholder="you@example.com"
+              />
+            </div>
 
-        <p className="mt-6 text-center text-sm text-gray-600">
+            <div>
+              <label className="block text-sm font-medium text-white/70 mb-1.5">Пароль</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                className="w-full px-4 py-3 bg-white/5 border border-white/15 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF1493] transition"
+                placeholder="Минимум 6 символов"
+              />
+            </div>
+
+            {error && (
+              <div className="text-[#FF1493] text-sm bg-[#FF1493]/10 border border-[#FF1493]/20 p-3 rounded-xl">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-[#FF1493] text-white py-3.5 rounded-xl font-semibold hover:bg-[#ff2d9e] disabled:opacity-50 transition"
+            >
+              {loading ? 'Регистрируем...' : 'Зарегистрироваться'}
+            </button>
+          </form>
+        </div>
+
+        <p className="mt-6 text-center text-sm text-white/50">
           Уже есть аккаунт?{' '}
-          <Link href="/login" className="text-blue-600 hover:underline font-medium">
+          <Link href="/login" className="text-[#FF1493] hover:underline font-medium">
             Войти
           </Link>
         </p>
