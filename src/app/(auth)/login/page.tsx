@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -17,6 +18,7 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setError(null)
+    setMessage(null)
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -24,7 +26,13 @@ export default function LoginPage() {
     })
 
     if (error) {
-      setError(error.message)
+      if (error.message.includes('Invalid login credentials')) {
+        setError('Неверный email или пароль. Если вы ещё не регистрировались — сначала создайте аккаунт.')
+      } else if (error.message.includes('Email not confirmed')) {
+        setError('Почта ещё не подтверждена. Проверьте письмо и перейдите по ссылке.')
+      } else {
+        setError(error.message)
+      }
       setLoading(false)
       return
     }
@@ -33,10 +41,35 @@ export default function LoginPage() {
     router.refresh()
   }
 
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError('Сначала введите email, на который зарегистрирован аккаунт')
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    setMessage(null)
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/login`,
+    })
+
+    if (error) {
+      setError(error.message)
+    } else {
+      setMessage('Мы отправили письмо для сброса пароля. Проверьте почту.')
+    }
+    setLoading(false)
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="max-w-md w-full bg-white rounded-xl shadow-md p-8">
-        <h1 className="text-2xl font-bold text-center mb-6">Вход</h1>
+        <h1 className="text-2xl font-bold text-center mb-2">Вход</h1>
+        <p className="text-center text-gray-500 text-sm mb-6">
+          Войдите в свой аккаунт
+        </p>
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
@@ -73,6 +106,12 @@ export default function LoginPage() {
             </div>
           )}
 
+          {message && (
+            <div className="text-green-700 text-sm bg-green-50 p-3 rounded-lg">
+              {message}
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading}
@@ -82,9 +121,19 @@ export default function LoginPage() {
           </button>
         </form>
 
+        <div className="mt-4 text-center">
+          <button
+            type="button"
+            onClick={handleForgotPassword}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            Забыли пароль?
+          </button>
+        </div>
+
         <p className="mt-6 text-center text-sm text-gray-600">
-          Нет аккаунта?{' '}
-          <Link href="/register" className="text-blue-600 hover:underline">
+          Ещё нет аккаунта?{' '}
+          <Link href="/register" className="text-blue-600 hover:underline font-medium">
             Зарегистрироваться
           </Link>
         </p>

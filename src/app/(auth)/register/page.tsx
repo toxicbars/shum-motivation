@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -18,6 +19,12 @@ export default function RegisterPage() {
     e.preventDefault()
     setLoading(true)
     setError(null)
+
+    if (password.length < 6) {
+      setError('Пароль должен быть не меньше 6 символов')
+      setLoading(false)
+      return
+    }
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -30,21 +37,59 @@ export default function RegisterPage() {
     })
 
     if (error) {
-      setError(error.message)
+      if (error.message.includes('already registered')) {
+        setError('Этот email уже зарегистрирован. Попробуйте войти.')
+      } else {
+        setError(error.message)
+      }
       setLoading(false)
       return
     }
 
-    if (data.user) {
-      router.push('/dashboard')
-      router.refresh()
+    // Если подтверждение почты включено
+    if (data.user && !data.session) {
+      setSuccess(true)
+      setLoading(false)
+      return
     }
+
+    // Если подтверждение отключено — сразу входим
+    router.push('/dashboard')
+    router.refresh()
+  }
+
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-md p-8 text-center">
+          <div className="text-5xl mb-4">📧</div>
+          <h1 className="text-2xl font-bold mb-3">Проверьте почту</h1>
+          <p className="text-gray-600 mb-6">
+            Мы отправили письмо на <strong>{email}</strong>.
+            <br />
+            Перейдите по ссылке в письме, чтобы подтвердить аккаунт.
+          </p>
+          <p className="text-sm text-gray-500 mb-6">
+            Не пришло письмо? Проверьте папку «Спам».
+          </p>
+          <Link
+            href="/login"
+            className="inline-block bg-blue-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition"
+          >
+            Перейти ко входу
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="max-w-md w-full bg-white rounded-xl shadow-md p-8">
-        <h1 className="text-2xl font-bold text-center mb-6">Регистрация</h1>
+        <h1 className="text-2xl font-bold text-center mb-2">Регистрация</h1>
+        <p className="text-center text-gray-500 text-sm mb-6">
+          Создайте аккаунт, чтобы участвовать в программах
+        </p>
 
         <form onSubmit={handleRegister} className="space-y-4">
           <div>
@@ -107,7 +152,7 @@ export default function RegisterPage() {
 
         <p className="mt-6 text-center text-sm text-gray-600">
           Уже есть аккаунт?{' '}
-          <Link href="/login" className="text-blue-600 hover:underline">
+          <Link href="/login" className="text-blue-600 hover:underline font-medium">
             Войти
           </Link>
         </p>
