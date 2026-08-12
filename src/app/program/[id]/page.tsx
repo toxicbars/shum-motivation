@@ -107,12 +107,20 @@ export default async function ProgramPage({
 
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold">Задания</h2>
-              <Link
-                href={`/program/${id}/tasks/new`}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
-              >
-                + Добавить задание
-              </Link>
+              <div className="flex gap-2">
+                <Link
+                  href={`/program/${id}/results`}
+                  className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+                >
+                  Результаты
+                </Link>
+                <Link
+                  href={`/program/${id}/tasks/new`}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+                >
+                  + Добавить задание
+                </Link>
+              </div>
             </div>
 
             {tasks.length === 0 ? (
