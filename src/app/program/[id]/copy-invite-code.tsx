@@ -18,10 +18,10 @@ export function CopyInviteCode({ code }: { code: string }) {
   return (
     <button
       onClick={handleCopy}
-      className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+      className={`px-4 py-2.5 rounded-xl text-sm font-medium transition ${
         copied
-          ? 'bg-green-100 text-green-700'
-          : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+          : 'bg-[#FF1493]/20 text-[#FF1493] border border-[#FF1493]/30 hover:bg-[#FF1493]/30'
       }`}
     >
       {copied ? 'Скопировано!' : 'Скопировать'}
