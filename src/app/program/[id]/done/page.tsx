@@ -27,14 +27,18 @@ export default async function DonePage({
     redirect(`/program/${programId}`)
   }
 
-  // Только проверенные сдачи
+  // Получаем все сдачи пользователя
   const { data: submissions } = await supabase
     .from('submissions')
     .select(`
       id,
+      status,
       submitted_at,
+      task_id,
       tasks (
-        title
+        id,
+        title,
+        max_points
       ),
       reviews (
         points,
@@ -42,10 +46,46 @@ export default async function DonePage({
       )
     `)
     .eq('user_id', user.id)
-    .eq('status', 'reviewed')
     .order('submitted_at', { ascending: false })
 
-  const list = submissions || []
+  // Группируем по заданиям (берём последнюю сдачу по каждому заданию)
+  const taskMap = new Map()
+
+  submissions?.forEach((sub: any) => {
+    if (!sub.tasks) return
+    const taskId = sub.task_id
+
+    if (!taskMap.has(taskId)) {
+      taskMap.set(taskId, {
+        task: sub.tasks,
+        submissions: [],
+      })
+    }
+    taskMap.get(taskId).submissions.push(sub)
+  })
+
+  const items = Array.from(taskMap.values()).map((item: any) => {
+    const subs = item.submissions
+    const lastSub = subs[0] // самая новая
+    const review = lastSub.reviews?.[0]
+    const isReviewed = lastSub.status === 'reviewed' && review
+    const attempts = subs.length
+
+    // Можно пересдать: ровно 1 попытка + проверена + баллов меньше половины
+    const canRedo =
+      attempts === 1 &&
+      isReviewed &&
+      review.points < item.task.max_points / 2
+
+    return {
+      task: item.task,
+      lastSub,
+      review,
+      isReviewed,
+      attempts,
+      canRedo,
+    }
+  })
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -62,48 +102,70 @@ export default async function DonePage({
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8">
-        {list.length === 0 ? (
+        {items.length === 0 ? (
           <div className="bg-white rounded-xl border border-dashed border-gray-300 p-10 text-center text-gray-500">
-            Пока нет проверенных заданий
+            Ты ещё ничего не сдавал
           </div>
         ) : (
           <div className="space-y-4">
-            {list.map((sub: any) => {
-              const review = sub.reviews?.[0]
-
-              return (
-                <div
-                  key={sub.id}
-                  className="bg-white rounded-xl border border-gray-200 p-5"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-semibold text-lg">
-                      {sub.tasks?.title || 'Задание'}
-                    </h3>
-                    <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-green-100 text-green-700">
-                      Проверено
-                    </span>
-                  </div>
-
-                  <div className="text-sm text-gray-500 mb-3">
-                    Сдано: {new Date(sub.submitted_at).toLocaleString('ru-RU')}
-                  </div>
-
-                  {review && (
-                    <div className="bg-green-50 rounded-lg p-4">
-                      <div className="font-medium text-green-800">
-                        {review.points} баллов
-                      </div>
-                      {review.comment && (
-                        <p className="text-sm text-green-700 mt-1">
-                          {review.comment}
-                        </p>
-                      )}
-                    </div>
-                  )}
+            {items.map((item) => (
+              <div
+                key={item.task.id}
+                className="bg-white rounded-xl border border-gray-200 p-5"
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="font-semibold text-lg">{item.task.title}</h3>
+                  <span
+                    className={`text-xs px-2.5 py-1 rounded-full font-medium ${
+                      item.canRedo
+                        ? 'bg-yellow-100 text-yellow-700'
+                        : item.isReviewed
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-blue-100 text-blue-700'
+                    }`}
+                  >
+                    {item.canRedo
+                      ? 'Можно пересдать'
+                      : item.isReviewed
+                      ? 'Проверено'
+                      : 'На проверке'}
+                  </span>
                 </div>
-              )
-            })}
+
+                <div className="text-sm text-gray-500 mb-3">
+                  Попыток: {item.attempts} · Сдано:{' '}
+                  {new Date(item.lastSub.submitted_at).toLocaleString('ru-RU')}
+                </div>
+
+                {item.isReviewed && item.review && (
+                  <div className="bg-green-50 rounded-lg p-4 mb-3">
+                    <div className="font-medium text-green-800">
+                      {item.review.points} баллов
+                    </div>
+                    {item.review.comment && (
+                      <p className="text-sm text-green-700 mt-1">
+                        {item.review.comment}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {!item.isReviewed && (
+                  <div className="text-sm text-blue-700 bg-blue-50 rounded-lg p-3 mb-3">
+                    Модератор ещё не проверил эту работу
+                  </div>
+                )}
+
+                {item.canRedo && (
+                  <Link
+                    href={`/program/${programId}/tasks/${item.task.id}`}
+                    className="block w-full text-center bg-yellow-500 text-white py-2.5 rounded-lg font-medium hover:bg-yellow-600 transition"
+                  >
+                    Пересдать задание
+                  </Link>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </main>
