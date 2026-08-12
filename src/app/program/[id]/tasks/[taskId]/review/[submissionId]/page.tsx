@@ -12,6 +12,7 @@ export default function ReviewPage() {
   const submissionId = params.submissionId as string
 
   const [submission, setSubmission] = useState<any>(null)
+  const [files, setFiles] = useState<any[]>([])
   const [points, setPoints] = useState(0)
   const [comment, setComment] = useState('')
   const [loading, setLoading] = useState(false)
@@ -38,9 +39,22 @@ export default function ReviewPage() {
         setMaxPoints(sub.tasks?.max_points || 10)
         setPoints(sub.tasks?.max_points || 10)
       }
+
+      // Загружаем файлы
+      const { data: filesData } = await supabase
+        .from('submission_files')
+        .select('*')
+        .eq('submission_id', submissionId)
+
+      setFiles(filesData || [])
     }
     load()
   }, [submissionId])
+
+  const getFileUrl = (filePath: string) => {
+    const { data } = supabase.storage.from('submissions').getPublicUrl(filePath)
+    return data.publicUrl
+  }
 
   const handleReview = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -139,7 +153,7 @@ export default function ReviewPage() {
           )}
 
           {submission.links && submission.links.length > 0 && (
-            <div>
+            <div className="mb-4">
               <div className="text-sm text-gray-500 mb-1">Ссылки</div>
               <ul className="space-y-1">
                 {submission.links.map((link: string, i: number) => (
@@ -155,6 +169,35 @@ export default function ReviewPage() {
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {/* Файлы */}
+          {files.length > 0 && (
+            <div>
+              <div className="text-sm text-gray-500 mb-2">Прикреплённые файлы</div>
+              <div className="space-y-2">
+                {files.map((file) => (
+                  <a
+                    key={file.id}
+                    href={getFileUrl(file.file_path)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                  >
+                    <span className="text-2xl">
+                      {file.mime_type?.startsWith('image/') ? '🖼️' : '📄'}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{file.file_name}</div>
+                      <div className="text-xs text-gray-500">
+                        {file.size ? `${(file.size / 1024 / 1024).toFixed(1)} МБ` : ''}
+                      </div>
+                    </div>
+                    <span className="text-blue-600 text-sm">Открыть</span>
+                  </a>
+                ))}
+              </div>
             </div>
           )}
         </div>
