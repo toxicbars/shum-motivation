@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
+import { CopyInviteCode } from './copy-invite-code'
 
 export default async function ProgramPage({
   params,
@@ -51,8 +52,10 @@ export default async function ProgramPage({
   const totalPoints =
     transactions?.reduce((sum, t) => sum + t.amount, 0) || 0
 
-  // Для модератора — список заданий
+  // Для модератора — задания + количество непроверенных
   let tasks: any[] = []
+  let unreviewedCount = 0
+
   if (isModerator) {
     const { data } = await supabase
       .from('tasks')
@@ -61,6 +64,15 @@ export default async function ProgramPage({
       .eq('is_published', true)
       .order('sort_order', { ascending: true })
     tasks = data || []
+
+    // Считаем непроверенные сдачи
+    const { count } = await supabase
+      .from('submissions')
+      .select('*, tasks!inner(program_id)', { count: 'exact', head: true })
+      .eq('status', 'pending')
+      .eq('tasks.program_id', id)
+
+    unreviewedCount = count || 0
   }
 
   return (
@@ -75,12 +87,12 @@ export default async function ProgramPage({
           </div>
           <div className="text-sm">
             {isModerator ? (
-              <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full">
+              <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-medium">
                 Модератор
               </span>
             ) : (
-              <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium">
-                {totalPoints} баллов
+              <span className="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full font-semibold text-base">
+                {totalPoints} {totalPoints === 1 ? 'балл' : totalPoints < 5 ? 'балла' : 'баллов'}
               </span>
             )}
           </div>
@@ -92,18 +104,28 @@ export default async function ProgramPage({
         {isModerator && (
           <>
             <div className="bg-purple-50 border border-purple-100 rounded-xl p-5 mb-8">
-              <h2 className="font-semibold text-purple-900 mb-2">
+              <h2 className="font-semibold text-purple-900 mb-3">
                 Код приглашения
               </h2>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <code className="text-2xl font-mono tracking-widest bg-white px-4 py-2 rounded-lg border">
                   {program.invite_code}
                 </code>
-                <span className="text-sm text-purple-700">
-                  Отправь этот код участникам
+                <CopyInviteCode code={program.invite_code} />
+              </div>
+              <p className="text-sm text-purple-700 mt-2">
+                Отправь этот код участникам
+              </p>
+            </div>
+
+            {unreviewedCount > 0 && (
+              <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-5 py-3 mb-6 flex items-center gap-2">
+                <span className="text-lg">🔔</span>
+                <span>
+                  Есть <strong>{unreviewedCount}</strong> {unreviewedCount === 1 ? 'работа' : unreviewedCount < 5 ? 'работы' : 'работ'} на проверке
                 </span>
               </div>
-            </div>
+            )}
 
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold">Задания</h2>
@@ -173,7 +195,7 @@ export default async function ProgramPage({
           </>
         )}
 
-        {/* Блок для участника — две большие кнопки */}
+        {/* Блок для участника */}
         {!isModerator && (
           <div className="grid gap-4 sm:grid-cols-2 max-w-2xl mx-auto mt-6">
             <Link
@@ -198,7 +220,7 @@ export default async function ProgramPage({
                 Выполненные задания
               </div>
               <p className="text-sm text-gray-500 mt-2">
-                То, что уже сдано и проверено
+                Сданные и проверенные работы
               </p>
             </Link>
           </div>
