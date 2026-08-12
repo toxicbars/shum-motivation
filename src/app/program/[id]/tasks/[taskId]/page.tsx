@@ -48,7 +48,8 @@ export default async function TaskPage({
     .from('submissions')
     .select(`
       *,
-      reviews (*)
+      reviews (*),
+      submission_files (*)
     `)
     .eq('task_id', taskId)
     .eq('user_id', user.id)
@@ -62,12 +63,19 @@ export default async function TaskPage({
       .select(`
         *,
         profiles (full_name),
-        reviews (*)
+        reviews (*),
+        submission_files (*)
       `)
       .eq('task_id', taskId)
       .order('submitted_at', { ascending: false })
 
     allSubmissions = data || []
+  }
+
+  // Функция получения публичной ссылки на файл
+  const getFileUrl = (filePath: string) => {
+    const { data } = supabase.storage.from('submissions').getPublicUrl(filePath)
+    return data.publicUrl
   }
 
   return (
@@ -159,6 +167,22 @@ export default async function TaskPage({
                     </p>
                   )}
 
+                  {sub.submission_files && sub.submission_files.length > 0 && (
+                    <div className="mb-2 space-y-1">
+                      {sub.submission_files.map((file: any) => (
+                        <a
+                          key={file.id}
+                          href={getFileUrl(file.file_path)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 text-sm hover:underline block"
+                        >
+                          {file.mime_type?.startsWith('image/') ? '🖼️' : '📄'} {file.file_name}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+
                   {sub.reviews && sub.reviews.length > 0 && (
                     <div className="mt-3 pt-3 border-t">
                       <div className="text-sm font-medium text-green-700">
@@ -235,10 +259,29 @@ export default async function TaskPage({
                       </div>
                     )}
 
+                    {/* Файлы */}
+                    {sub.submission_files && sub.submission_files.length > 0 && (
+                      <div className="mb-3 space-y-1">
+                        {sub.submission_files.map((file: any) => (
+                          <a
+                            key={file.id}
+                            href={getFileUrl(file.file_path)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
+                          >
+                            <span>
+                              {file.mime_type?.startsWith('image/') ? '🖼️' : '📄'}
+                            </span>
+                            <span className="truncate">{file.file_name}</span>
+                          </a>
+                        ))}
+                      </div>
+                    )}
+
                     {sub.status === 'reviewed' && sub.reviews?.[0] ? (
                       <div className="bg-green-50 text-green-800 p-3 rounded-lg text-sm">
-                        Поставлено: <strong>{sub.reviews[0].points}</strong>{' '}
-                        баллов
+                        Поставлено: <strong>{sub.reviews[0].points}</strong> баллов
                         {sub.reviews[0].comment && (
                           <div className="mt-1">{sub.reviews[0].comment}</div>
                         )}
