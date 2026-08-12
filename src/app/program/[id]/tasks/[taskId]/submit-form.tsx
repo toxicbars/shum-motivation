@@ -20,9 +20,11 @@ const MAX_FILE_SIZE = 15 * 1024 * 1024 // 15 МБ
 export function SubmitForm({
   taskId,
   programId,
+  isRedo = false,
 }: {
   taskId: string
   programId: string
+  isRedo?: boolean
 }) {
   const [content, setContent] = useState('')
   const [links, setLinks] = useState('')
@@ -71,7 +73,7 @@ export function SubmitForm({
       .map((l) => l.trim())
       .filter(Boolean)
 
-    // 1. Создаём сдачу
+    // Создаём новую сдачу
     const { data: submission, error: insertError } = await supabase
       .from('submissions')
       .insert({
@@ -90,7 +92,7 @@ export function SubmitForm({
       return
     }
 
-    // 2. Загружаем файлы (если есть)
+    // Загружаем файлы
     if (files && files.length > 0) {
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
@@ -105,7 +107,6 @@ export function SubmitForm({
           continue
         }
 
-        // Сохраняем информацию о файле
         await supabase.from('submission_files').insert({
           submission_id: submission.id,
           file_name: file.name,
@@ -127,13 +128,21 @@ export function SubmitForm({
   if (success) {
     return (
       <div className="bg-green-50 text-green-800 p-4 rounded-lg">
-        Работа успешно отправлена на проверку!
+        {isRedo
+          ? 'Переработанная работа отправлена на проверку!'
+          : 'Работа успешно отправлена на проверку!'}
       </div>
     )
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {isRedo && (
+        <div className="bg-yellow-50 text-yellow-800 p-3 rounded-lg text-sm">
+          Это ваша повторная попытка. После проверки модератора пересдать больше будет нельзя.
+        </div>
+      )}
+
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Текстовый ответ
@@ -190,7 +199,7 @@ export function SubmitForm({
         disabled={loading}
         className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition"
       >
-        {loading ? 'Отправляем...' : 'Сдать задание'}
+        {loading ? 'Отправляем...' : isRedo ? 'Пересдать задание' : 'Сдать задание'}
       </button>
     </form>
   )

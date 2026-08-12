@@ -43,7 +43,7 @@ export default async function TaskPage({
   const isModerator = membership.role === 'moderator'
   const isExpired = task.deadline && new Date(task.deadline) < new Date()
 
-  // Сдачи текущего пользователя
+  // Все сдачи текущего пользователя по этому заданию
   const { data: mySubmissions } = await supabase
     .from('submissions')
     .select(`
@@ -53,7 +53,26 @@ export default async function TaskPage({
     `)
     .eq('task_id', taskId)
     .eq('user_id', user.id)
-    .order('submitted_at', { ascending: false })
+    .order('submitted_at', { ascending: true })
+
+  const submissionsCount = mySubmissions?.length || 0
+  const lastSubmission = mySubmissions?.[mySubmissions.length - 1]
+  const lastReview = lastSubmission?.reviews?.[0]
+
+  // Можно ли пересдать?
+  // Условия: ровно 1 сдача, она проверена, баллов меньше половины максимума
+  const canRedo =
+    !isModerator &&
+    submissionsCount === 1 &&
+    lastSubmission?.status === 'reviewed' &&
+    lastReview &&
+    lastReview.points < task.max_points / 2
+
+  // Можно ли сдавать в первый раз?
+  const canSubmitFirstTime =
+    !isModerator &&
+    submissionsCount === 0 &&
+    !isExpired
 
   // Все сдачи (для модератора)
   let allSubmissions: any[] = []
@@ -72,7 +91,6 @@ export default async function TaskPage({
     allSubmissions = data || []
   }
 
-  // Функция получения публичной ссылки на файл
   const getFileUrl = (filePath: string) => {
     const { data } = supabase.storage.from('submissions').getPublicUrl(filePath)
     return data.publicUrl
@@ -124,18 +142,24 @@ export default async function TaskPage({
           )}
         </div>
 
-        {/* Форма сдачи (участник) */}
-        {!isModerator && (
+        {/* Форма сдачи / пересдачи */}
+        {!isModerator && (canSubmitFirstTime || canRedo) && (
           <div className="bg-white rounded-xl border p-6">
-            <h3 className="text-lg font-semibold mb-4">Сдать задание</h3>
+            <h3 className="text-lg font-semibold mb-4">
+              {canRedo ? 'Пересдать задание' : 'Сдать задание'}
+            </h3>
+            <SubmitForm
+              taskId={taskId}
+              programId={programId}
+              isRedo={canRedo}
+            />
+          </div>
+        )}
 
-            {isExpired ? (
-              <div className="bg-red-50 text-red-700 p-4 rounded-lg text-sm">
-                Дедлайн уже прошёл. Сдать задание больше нельзя.
-              </div>
-            ) : (
-              <SubmitForm taskId={taskId} programId={programId} />
-            )}
+        {/* Сообщение, если пересдача больше недоступна */}
+        {!isModerator && submissionsCount >= 2 && (
+          <div className="bg-gray-100 text-gray-600 p-4 rounded-lg text-sm">
+            Вы уже использовали повторную попытку. Больше пересдать это задание нельзя.
           </div>
         )}
 
@@ -144,10 +168,11 @@ export default async function TaskPage({
           <div className="bg-white rounded-xl border p-6">
             <h3 className="text-lg font-semibold mb-4">Мои сдачи</h3>
             <div className="space-y-4">
-              {mySubmissions.map((sub: any) => (
+              {mySubmissions.map((sub: any, index: number) => (
                 <div key={sub.id} className="border rounded-lg p-4 bg-gray-50">
                   <div className="flex justify-between text-sm text-gray-500 mb-2">
                     <span>
+                      {index === 0 ? 'Первая попытка' : 'Повторная попытка'} ·{' '}
                       {new Date(sub.submitted_at).toLocaleString('ru-RU')}
                     </span>
                     <span
@@ -259,7 +284,6 @@ export default async function TaskPage({
                       </div>
                     )}
 
-                    {/* Файлы */}
                     {sub.submission_files && sub.submission_files.length > 0 && (
                       <div className="mb-3 space-y-1">
                         {sub.submission_files.map((file: any) => (

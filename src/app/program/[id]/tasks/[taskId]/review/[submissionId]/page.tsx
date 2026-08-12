@@ -18,6 +18,7 @@ export default function ReviewPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [maxPoints, setMaxPoints] = useState(10)
+  const [isRedo, setIsRedo] = useState(false)
 
   const router = useRouter()
   const supabase = createClient()
@@ -38,9 +39,17 @@ export default function ReviewPage() {
         setSubmission(sub)
         setMaxPoints(sub.tasks?.max_points || 10)
         setPoints(sub.tasks?.max_points || 10)
+
+        // Проверяем, является ли это повторной сдачей
+        const { count } = await supabase
+          .from('submissions')
+          .select('*', { count: 'exact', head: true })
+          .eq('task_id', taskId)
+          .eq('user_id', sub.user_id)
+
+        setIsRedo((count || 0) > 1)
       }
 
-      // Загружаем файлы
       const { data: filesData } = await supabase
         .from('submission_files')
         .select('*')
@@ -49,7 +58,7 @@ export default function ReviewPage() {
       setFiles(filesData || [])
     }
     load()
-  }, [submissionId])
+  }, [submissionId, taskId])
 
   const getFileUrl = (filePath: string) => {
     const { data } = supabase.storage.from('submissions').getPublicUrl(filePath)
@@ -65,8 +74,8 @@ export default function ReviewPage() {
       data: { user },
     } = await supabase.auth.getUser()
 
-    if (!user) {
-      setError('Нужно войти')
+    if (!user || !submission) {
+      setError('Ошибка авторизации')
       setLoading(false)
       return
     }
@@ -91,14 +100,44 @@ export default function ReviewPage() {
       .update({ status: 'reviewed' })
       .eq('id', submissionId)
 
-    // 3. Начисляем баллы
+    // 3. Работа с баллами
+    if (isRedo) {
+      // Это повторная сдача → удаляем старые баллы по этому заданию и ставим новые
+      await supabase
+        .from('point_transactions')
+        .delete()
+        .eq('program_id', programId)
+        .eq('user_id', submission.user_id)
+        .eq('related_submission_id', submissionId) // на всякий случай
+        .like('reason', `%${submission.tasks?.title || ''}%`)
+
+      // Более надёжно: удаляем все транзакции по этому заданию для пользователя
+      // (находим старые submission_id этого задания)
+      const { data: oldSubs } = await supabase
+        .from('submissions')
+        .select('id')
+        .eq('task_id', taskId)
+        .eq('user_id', submission.user_id)
+
+      if (oldSubs && oldSubs.length > 0) {
+        const oldIds = oldSubs.map((s) => s.id)
+        await supabase
+          .from('point_transactions')
+          .delete()
+          .eq('program_id', programId)
+          .eq('user_id', submission.user_id)
+          .in('related_submission_id', oldIds)
+      }
+    }
+
+    // Добавляем новые баллы
     const { error: pointsError } = await supabase
       .from('point_transactions')
       .insert({
         program_id: programId,
         user_id: submission.user_id,
         amount: points,
-        reason: `Задание: ${submission.tasks?.title || 'без названия'}`,
+        reason: `Задание: ${submission.tasks?.title || 'без названия'}${isRedo ? ' (пересдача)' : ''}`,
         related_submission_id: submissionId,
         created_by: user.id,
       })
@@ -131,12 +170,19 @@ export default function ReviewPage() {
           >
             ← Назад
           </Link>
-          <h1 className="text-xl font-bold">Проверка работы</h1>
+          <h1 className="text-xl font-bold">
+            {isRedo ? 'Повторная проверка' : 'Проверка работы'}
+          </h1>
         </div>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
-        {/* Информация о сдаче */}
+        {isRedo && (
+          <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg text-sm">
+            Это повторная сдача. Новая оценка заменит предыдущую.
+          </div>
+        )}
+
         <div className="bg-white rounded-xl border p-6">
           <div className="text-sm text-gray-500 mb-1">Участник</div>
           <div className="font-semibold text-lg mb-4">
@@ -172,7 +218,6 @@ export default function ReviewPage() {
             </div>
           )}
 
-          {/* Файлы */}
           {files.length > 0 && (
             <div>
               <div className="text-sm text-gray-500 mb-2">Прикреплённые файлы</div>
@@ -202,7 +247,6 @@ export default function ReviewPage() {
           )}
         </div>
 
-        {/* Форма оценки */}
         <div className="bg-white rounded-xl border p-6">
           <h2 className="text-lg font-semibold mb-4">Оценка</h2>
 
@@ -246,7 +290,7 @@ export default function ReviewPage() {
               disabled={loading}
               className="w-full bg-green-600 text-white py-2.5 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 transition"
             >
-              {loading ? 'Сохраняем...' : 'Поставить оценку'}
+              {loading ? 'Сохраняем...' : isRedo ? 'Поставить новую оценку' : 'Поставить оценку'}
             </button>
           </form>
         </div>
