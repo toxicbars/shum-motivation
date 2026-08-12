@@ -59,8 +59,6 @@ export default async function TaskPage({
   const lastSubmission = mySubmissions?.[mySubmissions.length - 1]
   const lastReview = lastSubmission?.reviews?.[0]
 
-  // Можно ли пересдать?
-  // Условия: ровно 1 сдача, она проверена, баллов меньше половины максимума
   const canRedo =
     !isModerator &&
     submissionsCount === 1 &&
@@ -68,7 +66,6 @@ export default async function TaskPage({
     lastReview &&
     lastReview.points < task.max_points / 2
 
-  // Можно ли сдавать в первый раз?
   const canSubmitFirstTime =
     !isModerator &&
     submissionsCount === 0 &&
@@ -156,7 +153,6 @@ export default async function TaskPage({
           </div>
         )}
 
-        {/* Сообщение, если пересдача больше недоступна */}
         {!isModerator && submissionsCount >= 2 && (
           <div className="bg-gray-100 text-gray-600 p-4 rounded-lg text-sm">
             Вы уже использовали повторную попытку. Больше пересдать это задание нельзя.
@@ -193,18 +189,31 @@ export default async function TaskPage({
                   )}
 
                   {sub.submission_files && sub.submission_files.length > 0 && (
-                    <div className="mb-2 space-y-1">
-                      {sub.submission_files.map((file: any) => (
-                        <a
-                          key={file.id}
-                          href={getFileUrl(file.file_path)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 text-sm hover:underline block"
-                        >
-                          {file.mime_type?.startsWith('image/') ? '🖼️' : '📄'} {file.file_name}
-                        </a>
-                      ))}
+                    <div className="mb-2 flex flex-wrap gap-2">
+                      {sub.submission_files.map((file: any) => {
+                        const url = getFileUrl(file.file_path)
+                        const isImage = file.mime_type?.startsWith('image/')
+
+                        return isImage ? (
+                          <a key={file.id} href={url} target="_blank" rel="noopener noreferrer">
+                            <img
+                              src={url}
+                              alt={file.file_name}
+                              className="h-20 w-20 object-cover rounded-lg border"
+                            />
+                          </a>
+                        ) : (
+                          <a
+                            key={file.id}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 text-sm hover:underline flex items-center gap-1"
+                          >
+                            📄 {file.file_name}
+                          </a>
+                        )
+                      })}
                     </div>
                   )}
 
@@ -251,11 +260,11 @@ export default async function TaskPage({
 
                       <div>
                         {sub.status === 'reviewed' ? (
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                          <span className="text-xs bg-green-100 text-green-700 px-2.5 py-1 rounded-full font-medium">
                             Проверено
                           </span>
                         ) : (
-                          <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">
+                          <span className="text-xs bg-yellow-100 text-yellow-700 px-2.5 py-1 rounded-full font-medium">
                             На проверке
                           </span>
                         )}
@@ -284,22 +293,33 @@ export default async function TaskPage({
                       </div>
                     )}
 
+                    {/* Файлы с превью */}
                     {sub.submission_files && sub.submission_files.length > 0 && (
-                      <div className="mb-3 space-y-1">
-                        {sub.submission_files.map((file: any) => (
-                          <a
-                            key={file.id}
-                            href={getFileUrl(file.file_path)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
-                          >
-                            <span>
-                              {file.mime_type?.startsWith('image/') ? '🖼️' : '📄'}
-                            </span>
-                            <span className="truncate">{file.file_name}</span>
-                          </a>
-                        ))}
+                      <div className="mb-3 flex flex-wrap gap-2">
+                        {sub.submission_files.map((file: any) => {
+                          const url = getFileUrl(file.file_path)
+                          const isImage = file.mime_type?.startsWith('image/')
+
+                          return isImage ? (
+                            <a key={file.id} href={url} target="_blank" rel="noopener noreferrer">
+                              <img
+                                src={url}
+                                alt={file.file_name}
+                                className="h-24 w-24 object-cover rounded-lg border hover:opacity-90 transition"
+                              />
+                            </a>
+                          ) : (
+                            <a
+                              key={file.id}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 text-sm text-blue-600 hover:underline bg-gray-50 px-3 py-2 rounded-lg"
+                            >
+                              📄 {file.file_name}
+                            </a>
+                          )
+                        })}
                       </div>
                     )}
 
