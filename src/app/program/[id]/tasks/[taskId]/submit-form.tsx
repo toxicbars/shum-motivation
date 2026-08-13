@@ -15,7 +15,7 @@ const ALLOWED_TYPES = [
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 ]
 
-const MAX_FILE_SIZE = 15 * 1024 * 1024
+const MAX_FILE_SIZE = 3 * 1024 * 1024 // 3 МБ
 
 export function SubmitForm({
   taskId,
@@ -41,7 +41,10 @@ export function SubmitForm({
     setLoading(true)
     setError(null)
 
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
     if (!user) {
       setError('Нужно войти')
       setLoading(false)
@@ -57,14 +60,17 @@ export function SubmitForm({
           return
         }
         if (file.size > MAX_FILE_SIZE) {
-          setError(`Файл "${file.name}" больше 15 МБ`)
+          setError(`Файл "${file.name}" больше 3 МБ`)
           setLoading(false)
           return
         }
       }
     }
 
-    const linksArray = links.split('\n').map((l) => l.trim()).filter(Boolean)
+    const linksArray = links
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean)
 
     const { data: submission, error: insertError } = await supabase
       .from('submissions')
@@ -119,7 +125,9 @@ export function SubmitForm({
   if (success) {
     return (
       <div className="bg-green-500/10 border border-green-500/20 text-green-400 p-4 rounded-xl">
-        {isRedo ? 'Переработанная работа отправлена на проверку!' : 'Работа успешно отправлена на проверку!'}
+        {isRedo
+          ? 'Переработанная работа отправлена на проверку!'
+          : 'Работа успешно отправлена на проверку!'}
       </div>
     )
   }
@@ -144,7 +152,9 @@ export function SubmitForm({
       </div>
 
       <div>
-        <label className="block text-sm text-white/70 mb-1.5">Ссылки (каждая с новой строки)</label>
+        <label className="block text-sm text-white/70 mb-1.5">
+          Ссылки (каждая с новой строки)
+        </label>
         <textarea
           value={links}
           onChange={(e) => setLinks(e.target.value)}
@@ -158,7 +168,9 @@ export function SubmitForm({
       </div>
 
       <div>
-        <label className="block text-sm text-white/70 mb-1.5">Файлы (фото, документы)</label>
+        <label className="block text-sm text-white/70 mb-1.5">
+          Файлы (фото, документы)
+        </label>
         <input
           type="file"
           multiple
@@ -166,11 +178,15 @@ export function SubmitForm({
           onChange={(e) => setFiles(e.target.files)}
           className="w-full text-sm text-white/60 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#FF1493]/20 file:text-[#FF1493] hover:file:bg-[#FF1493]/30"
         />
-        <p className="text-xs text-white/30 mt-1">Максимум 15 МБ на файл. Можно несколько файлов.</p>
+        <p className="text-xs text-white/30 mt-1">
+          Максимум 3 МБ на файл. Можно несколько файлов.
+        </p>
       </div>
 
       {error && (
-        <div className="text-[#FF1493] text-sm bg-[#FF1493]/10 p-3 rounded-xl">{error}</div>
+        <div className="text-[#FF1493] text-sm bg-[#FF1493]/10 p-3 rounded-xl">
+          {error}
+        </div>
       )}
 
       <button
