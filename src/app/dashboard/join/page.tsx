@@ -17,17 +17,13 @@ export default function JoinProgramPage() {
     setLoading(true)
     setError(null)
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       setError('Нужно войти в аккаунт')
       setLoading(false)
       return
     }
 
-    // Ищем программу по коду
     const { data: program, error: programError } = await supabase
       .from('programs')
       .select('*')
@@ -41,7 +37,6 @@ export default function JoinProgramPage() {
       return
     }
 
-    // Проверяем, не состоит ли уже пользователь в программе
     const { data: existing } = await supabase
       .from('program_members')
       .select('id')
@@ -54,7 +49,6 @@ export default function JoinProgramPage() {
       return
     }
 
-    // Добавляем как участника
     const { error: memberError } = await supabase
       .from('program_members')
       .insert({
@@ -74,48 +68,42 @@ export default function JoinProgramPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
+    <div className="min-h-screen bg-[#26264A] text-white">
+      <header className="border-b border-white/10">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link href="/dashboard" className="text-gray-500 hover:text-gray-800">
-            ← Назад
-          </Link>
+          <Link href="/dashboard" className="text-white/50 hover:text-white">← Назад</Link>
           <h1 className="text-xl font-bold">Присоединиться к программе</h1>
         </div>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-10">
-        <div className="bg-white rounded-xl shadow-sm p-8">
-          <p className="text-gray-600 mb-6">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
+          <p className="text-white/50 mb-6">
             Введите код приглашения, который вам дали организаторы.
           </p>
 
           <form onSubmit={handleJoin} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Код приглашения
-              </label>
+              <label className="block text-sm text-white/70 mb-1.5">Код приглашения</label>
               <input
                 type="text"
                 value={code}
                 onChange={(e) => setCode(e.target.value.toUpperCase())}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase tracking-widest text-center text-lg"
+                className="w-full px-4 py-3 bg-white/5 border border-white/15 rounded-xl text-white text-center text-lg tracking-widest focus:outline-none focus:border-[#FF1493]"
                 placeholder="ABC123"
                 maxLength={10}
               />
             </div>
 
             {error && (
-              <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">
-                {error}
-              </div>
+              <div className="text-[#FF1493] text-sm bg-[#FF1493]/10 p-3 rounded-xl">{error}</div>
             )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+              className="w-full bg-[#FF1493] text-white py-3.5 rounded-xl font-semibold hover:bg-[#ff2d9e] disabled:opacity-50 transition"
             >
               {loading ? 'Присоединяемся...' : 'Присоединиться'}
             </button>

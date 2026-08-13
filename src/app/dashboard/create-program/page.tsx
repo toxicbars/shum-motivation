@@ -22,10 +22,7 @@ export default function CreateProgramPage() {
     setLoading(true)
     setError(null)
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       setError('Нужно войти в аккаунт')
       setLoading(false)
@@ -34,7 +31,6 @@ export default function CreateProgramPage() {
 
     const inviteCode = generateInviteCode()
 
-    // Создаём программу
     const { data: program, error: programError } = await supabase
       .from('programs')
       .insert({
@@ -52,7 +48,6 @@ export default function CreateProgramPage() {
       return
     }
 
-    // Добавляем создателя как модератора
     const { error: memberError } = await supabase
       .from('program_members')
       .insert({
@@ -72,56 +67,48 @@ export default function CreateProgramPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
+    <div className="min-h-screen bg-[#26264A] text-white">
+      <header className="border-b border-white/10">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link href="/dashboard" className="text-gray-500 hover:text-gray-800">
-            ← Назад
-          </Link>
+          <Link href="/dashboard" className="text-white/50 hover:text-white">← Назад</Link>
           <h1 className="text-xl font-bold">Создать программу</h1>
         </div>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-10">
-        <div className="bg-white rounded-xl shadow-sm p-8">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
           <form onSubmit={handleCreate} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Название программы *
-              </label>
+              <label className="block text-sm text-white/70 mb-1.5">Название программы *</label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-white/5 border border-white/15 rounded-xl text-white focus:outline-none focus:border-[#FF1493]"
                 placeholder="Например: Медиа-смена август 2026"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Описание
-              </label>
+              <label className="block text-sm text-white/70 mb-1.5">Описание</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-white/5 border border-white/15 rounded-xl text-white focus:outline-none focus:border-[#FF1493]"
                 placeholder="Кратко опиши программу..."
               />
             </div>
 
             {error && (
-              <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">
-                {error}
-              </div>
+              <div className="text-[#FF1493] text-sm bg-[#FF1493]/10 p-3 rounded-xl">{error}</div>
             )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+              className="w-full bg-[#FF1493] text-white py-3.5 rounded-xl font-semibold hover:bg-[#ff2d9e] disabled:opacity-50 transition"
             >
               {loading ? 'Создаём...' : 'Создать программу'}
             </button>
