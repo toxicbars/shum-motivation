@@ -66,7 +66,6 @@ export default async function ProgramPage({
 
     unreviewedCount = count || 0
 
-    // Значок поддержки: считаем переписки, где последнее сообщение от участника
     const { data: allSupport } = await supabase
       .from('support_messages')
       .select('user_id, is_moderator, created_at')
@@ -84,7 +83,6 @@ export default async function ProgramPage({
       (msg) => !msg.is_moderator
     ).length
   } else {
-    // Участник: значок поддержки, если последнее сообщение от модератора
     const { data: mySupport } = await supabase
       .from('support_messages')
       .select('is_moderator')
@@ -97,7 +95,6 @@ export default async function ProgramPage({
       supportBadge = 1
     }
 
-    // Значок "Выполненные": есть проверенные работы
     const { count: reviewedCount } = await supabase
       .from('submissions')
       .select('*', { count: 'exact', head: true })
@@ -246,4 +243,20 @@ export default async function ProgramPage({
 
             <Link
               href={`/program/${id}/support`}
-             
+              className="relative bg-white/5 border border-white/10 rounded-2xl p-8 text-center hover:bg-white/10 hover:border-[#FF1493]/40 transition"
+            >
+              <div className="text-4xl mb-3">💬</div>
+              <div className="text-xl font-bold mb-1">Поддержка</div>
+              <p className="text-sm text-white/40">Задать вопрос модераторам</p>
+              {supportBadge > 0 && (
+                <span className="absolute top-4 right-4 bg-[#FF1493] text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                  {supportBadge}
+                </span>
+              )}
+            </Link>
+          </div>
+        )}
+      </main>
+    </div>
+  )
+}
