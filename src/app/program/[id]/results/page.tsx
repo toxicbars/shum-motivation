@@ -16,7 +16,6 @@ export default async function ResultsPage({
 
   if (!user) redirect('/login')
 
-  // Проверяем, что пользователь — модератор
   const { data: membership } = await supabase
     .from('program_members')
     .select('role')
@@ -28,7 +27,6 @@ export default async function ResultsPage({
     redirect(`/program/${programId}`)
   }
 
-  // Получаем программу
   const { data: program } = await supabase
     .from('programs')
     .select('title')
@@ -37,32 +35,26 @@ export default async function ResultsPage({
 
   if (!program) notFound()
 
-  // Получаем всех участников программы
   const { data: members } = await supabase
     .from('program_members')
     .select(`
       user_id,
       role,
-      profiles (
-        full_name
-      )
+      profiles (full_name)
     `)
     .eq('program_id', programId)
     .eq('role', 'participant')
 
-  // Получаем все транзакции баллов
   const { data: transactions } = await supabase
     .from('point_transactions')
     .select('user_id, amount')
     .eq('program_id', programId)
 
-  // Считаем баллы по каждому участнику
   const pointsMap: Record<string, number> = {}
   transactions?.forEach((t) => {
     pointsMap[t.user_id] = (pointsMap[t.user_id] || 0) + t.amount
   })
 
-  // Собираем рейтинг
   const ranking = (members || [])
     .map((m: any) => ({
       userId: m.user_id,
@@ -72,13 +64,10 @@ export default async function ResultsPage({
     .sort((a, b) => b.points - a.points)
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
+    <div className="min-h-screen bg-[#26264A] text-white">
+      <header className="border-b border-white/10">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link
-            href={`/program/${programId}`}
-            className="text-gray-500 hover:text-gray-800"
-          >
+          <Link href={`/program/${programId}`} className="text-white/50 hover:text-white">
             ← Назад
           </Link>
           <h1 className="text-xl font-bold">Результаты — {program.title}</h1>
@@ -86,41 +75,32 @@ export default async function ResultsPage({
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-xl border overflow-hidden">
+        <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-white/5 border-b border-white/10">
               <tr>
-                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">
-                  Место
-                </th>
-                <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">
-                  Участник
-                </th>
-                <th className="text-right px-6 py-3 text-sm font-semibold text-gray-600">
-                  Баллы
-                </th>
+                <th className="text-left px-6 py-4 text-sm font-semibold text-white/50">Место</th>
+                <th className="text-left px-6 py-4 text-sm font-semibold text-white/50">Участник</th>
+                <th className="text-right px-6 py-4 text-sm font-semibold text-white/50">Баллы</th>
               </tr>
             </thead>
             <tbody>
               {ranking.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="px-6 py-10 text-center text-gray-500">
+                  <td colSpan={3} className="px-6 py-12 text-center text-white/40">
                     Пока нет участников
                   </td>
                 </tr>
               ) : (
                 ranking.map((person, index) => (
-                  <tr
-                    key={person.userId}
-                    className="border-b last:border-0 hover:bg-gray-50"
-                  >
-                    <td className="px-6 py-4 text-gray-500 font-medium">
+                  <tr key={person.userId} className="border-b border-white/5 last:border-0 hover:bg-white/5">
+                    <td className="px-6 py-4 text-white/50 font-medium w-20">
                       {index + 1}
                     </td>
                     <td className="px-6 py-4 font-medium">
                       {person.name}
                     </td>
-                    <td className="px-6 py-4 text-right font-semibold text-blue-600">
+                    <td className="px-6 py-4 text-right font-semibold text-[#FF1493]">
                       {person.points}
                     </td>
                   </tr>
