@@ -15,7 +15,7 @@ const ALLOWED_TYPES = [
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 ]
 
-const MAX_FILE_SIZE = 15 * 1024 * 1024 // 15 МБ
+const MAX_FILE_SIZE = 15 * 1024 * 1024
 
 export function SubmitForm({
   taskId,
@@ -41,17 +41,13 @@ export function SubmitForm({
     setLoading(true)
     setError(null)
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       setError('Нужно войти')
       setLoading(false)
       return
     }
 
-    // Проверка файлов
     if (files) {
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
@@ -68,12 +64,8 @@ export function SubmitForm({
       }
     }
 
-    const linksArray = links
-      .split('\n')
-      .map((l) => l.trim())
-      .filter(Boolean)
+    const linksArray = links.split('\n').map((l) => l.trim()).filter(Boolean)
 
-    // Создаём новую сдачу
     const { data: submission, error: insertError } = await supabase
       .from('submissions')
       .insert({
@@ -92,7 +84,6 @@ export function SubmitForm({
       return
     }
 
-    // Загружаем файлы
     if (files && files.length > 0) {
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
@@ -127,10 +118,8 @@ export function SubmitForm({
 
   if (success) {
     return (
-      <div className="bg-green-50 text-green-800 p-4 rounded-lg">
-        {isRedo
-          ? 'Переработанная работа отправлена на проверку!'
-          : 'Работа успешно отправлена на проверку!'}
+      <div className="bg-green-500/10 border border-green-500/20 text-green-400 p-4 rounded-xl">
+        {isRedo ? 'Переработанная работа отправлена на проверку!' : 'Работа успешно отправлена на проверку!'}
       </div>
     )
   }
@@ -138,66 +127,56 @@ export function SubmitForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {isRedo && (
-        <div className="bg-yellow-50 text-yellow-800 p-3 rounded-lg text-sm">
-          Это ваша повторная попытка. После проверки модератора пересдать больше будет нельзя.
+        <div className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 p-3 rounded-xl text-sm">
+          Это ваша повторная попытка. После проверки пересдать больше будет нельзя.
         </div>
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Текстовый ответ
-        </label>
+        <label className="block text-sm text-white/70 mb-1.5">Текстовый ответ</label>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
           rows={5}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-3 bg-white/5 border border-white/15 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF1493]"
           placeholder="Опиши, что ты сделал..."
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Ссылки (каждая с новой строки)
-        </label>
+        <label className="block text-sm text-white/70 mb-1.5">Ссылки (каждая с новой строки)</label>
         <textarea
           value={links}
           onChange={(e) => setLinks(e.target.value)}
           rows={3}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-3 bg-white/5 border border-white/15 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF1493]"
           placeholder="https://disk.yandex.ru/...&#10;https://youtu.be/..."
         />
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-xs text-white/30 mt-1">
           Видео лучше загружать на YouTube / Яндекс.Диск и вставлять ссылку
         </p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Файлы (фото, документы)
-        </label>
+        <label className="block text-sm text-white/70 mb-1.5">Файлы (фото, документы)</label>
         <input
           type="file"
           multiple
           accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx,.ppt,.pptx"
           onChange={(e) => setFiles(e.target.files)}
-          className="w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+          className="w-full text-sm text-white/60 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-[#FF1493]/20 file:text-[#FF1493] hover:file:bg-[#FF1493]/30"
         />
-        <p className="text-xs text-gray-500 mt-1">
-          Максимум 15 МБ на файл. Можно несколько файлов.
-        </p>
+        <p className="text-xs text-white/30 mt-1">Максимум 15 МБ на файл. Можно несколько файлов.</p>
       </div>
 
       {error && (
-        <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">
-          {error}
-        </div>
+        <div className="text-[#FF1493] text-sm bg-[#FF1493]/10 p-3 rounded-xl">{error}</div>
       )}
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition"
+        className="w-full bg-[#FF1493] text-white py-3 rounded-xl font-semibold hover:bg-[#ff2d9e] disabled:opacity-50 transition"
       >
         {loading ? 'Отправляем...' : isRedo ? 'Пересдать задание' : 'Сдать задание'}
       </button>
