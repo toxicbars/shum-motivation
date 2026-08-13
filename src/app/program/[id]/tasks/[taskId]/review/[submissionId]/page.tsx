@@ -27,11 +27,7 @@ export default function ReviewPage() {
     const load = async () => {
       const { data: sub } = await supabase
         .from('submissions')
-        .select(`
-          *,
-          profiles (full_name),
-          tasks (title, max_points)
-        `)
+        .select(`*, profiles (full_name), tasks (title, max_points)`)
         .eq('id', submissionId)
         .single()
 
@@ -40,7 +36,6 @@ export default function ReviewPage() {
         setMaxPoints(sub.tasks?.max_points || 10)
         setPoints(sub.tasks?.max_points || 10)
 
-        // Проверяем, является ли это повторной сдачей
         const { count } = await supabase
           .from('submissions')
           .select('*', { count: 'exact', head: true })
@@ -70,17 +65,13 @@ export default function ReviewPage() {
     setLoading(true)
     setError(null)
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user || !submission) {
       setError('Ошибка авторизации')
       setLoading(false)
       return
     }
 
-    // 1. Создаём review
     const { error: reviewError } = await supabase.from('reviews').insert({
       submission_id: submissionId,
       reviewer_id: user.id,
@@ -94,25 +85,9 @@ export default function ReviewPage() {
       return
     }
 
-    // 2. Обновляем статус сдачи
-    await supabase
-      .from('submissions')
-      .update({ status: 'reviewed' })
-      .eq('id', submissionId)
+    await supabase.from('submissions').update({ status: 'reviewed' }).eq('id', submissionId)
 
-    // 3. Работа с баллами
     if (isRedo) {
-      // Это повторная сдача → удаляем старые баллы по этому заданию и ставим новые
-      await supabase
-        .from('point_transactions')
-        .delete()
-        .eq('program_id', programId)
-        .eq('user_id', submission.user_id)
-        .eq('related_submission_id', submissionId) // на всякий случай
-        .like('reason', `%${submission.tasks?.title || ''}%`)
-
-      // Более надёжно: удаляем все транзакции по этому заданию для пользователя
-      // (находим старые submission_id этого задания)
       const { data: oldSubs } = await supabase
         .from('submissions')
         .select('id')
@@ -130,17 +105,14 @@ export default function ReviewPage() {
       }
     }
 
-    // Добавляем новые баллы
-    const { error: pointsError } = await supabase
-      .from('point_transactions')
-      .insert({
-        program_id: programId,
-        user_id: submission.user_id,
-        amount: points,
-        reason: `Задание: ${submission.tasks?.title || 'без названия'}${isRedo ? ' (пересдача)' : ''}`,
-        related_submission_id: submissionId,
-        created_by: user.id,
-      })
+    const { error: pointsError } = await supabase.from('point_transactions').insert({
+      program_id: programId,
+      user_id: submission.user_id,
+      amount: points,
+      reason: `Задание: ${submission.tasks?.title || 'без названия'}${isRedo ? ' (пересдача)' : ''}`,
+      related_submission_id: submissionId,
+      created_by: user.id,
+    })
 
     if (pointsError) {
       setError(pointsError.message)
@@ -154,62 +126,48 @@ export default function ReviewPage() {
 
   if (!submission) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-[#26264A] flex items-center justify-center text-white">
         Загрузка...
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
+    <div className="min-h-screen bg-[#26264A] text-white">
+      <header className="border-b border-white/10">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link
-            href={`/program/${programId}/tasks/${taskId}`}
-            className="text-gray-500 hover:text-gray-800"
-          >
+          <Link href={`/program/${programId}/tasks/${taskId}`} className="text-white/50 hover:text-white">
             ← Назад
           </Link>
-          <h1 className="text-xl font-bold">
-            {isRedo ? 'Повторная проверка' : 'Проверка работы'}
-          </h1>
+          <h1 className="text-xl font-bold">{isRedo ? 'Повторная проверка' : 'Проверка работы'}</h1>
         </div>
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
         {isRedo && (
-          <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg text-sm">
+          <div className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 p-4 rounded-xl text-sm">
             Это повторная сдача. Новая оценка заменит предыдущую.
           </div>
         )}
 
-        <div className="bg-white rounded-xl border p-6">
-          <div className="text-sm text-gray-500 mb-1">Участник</div>
-          <div className="font-semibold text-lg mb-4">
-            {submission.profiles?.full_name || 'Без имени'}
-          </div>
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+          <div className="text-sm text-white/40 mb-1">Участник</div>
+          <div className="font-semibold text-lg mb-4">{submission.profiles?.full_name || 'Без имени'}</div>
 
           {submission.content && (
             <div className="mb-4">
-              <div className="text-sm text-gray-500 mb-1">Ответ</div>
-              <div className="whitespace-pre-wrap bg-gray-50 p-4 rounded-lg">
-                {submission.content}
-              </div>
+              <div className="text-sm text-white/40 mb-1">Ответ</div>
+              <div className="whitespace-pre-wrap bg-white/5 p-4 rounded-xl">{submission.content}</div>
             </div>
           )}
 
-          {submission.links && submission.links.length > 0 && (
+          {submission.links?.length > 0 && (
             <div className="mb-4">
-              <div className="text-sm text-gray-500 mb-1">Ссылки</div>
+              <div className="text-sm text-white/40 mb-1">Ссылки</div>
               <ul className="space-y-1">
                 {submission.links.map((link: string, i: number) => (
                   <li key={i}>
-                    <a
-                      href={link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline break-all"
-                    >
+                    <a href={link} target="_blank" rel="noopener noreferrer" className="text-[#FF1493] hover:underline break-all">
                       {link}
                     </a>
                   </li>
@@ -220,7 +178,7 @@ export default function ReviewPage() {
 
           {files.length > 0 && (
             <div>
-              <div className="text-sm text-gray-500 mb-2">Прикреплённые файлы</div>
+              <div className="text-sm text-white/40 mb-2">Прикреплённые файлы</div>
               <div className="space-y-2">
                 {files.map((file) => (
                   <a
@@ -228,18 +186,16 @@ export default function ReviewPage() {
                     href={getFileUrl(file.file_path)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                    className="flex items-center gap-3 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition"
                   >
-                    <span className="text-2xl">
-                      {file.mime_type?.startsWith('image/') ? '🖼️' : '📄'}
-                    </span>
+                    <span className="text-2xl">{file.mime_type?.startsWith('image/') ? '🖼️' : '📄'}</span>
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{file.file_name}</div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-white/40">
                         {file.size ? `${(file.size / 1024 / 1024).toFixed(1)} МБ` : ''}
                       </div>
                     </div>
-                    <span className="text-blue-600 text-sm">Открыть</span>
+                    <span className="text-[#FF1493] text-sm">Открыть</span>
                   </a>
                 ))}
               </div>
@@ -247,14 +203,11 @@ export default function ReviewPage() {
           )}
         </div>
 
-        <div className="bg-white rounded-xl border p-6">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
           <h2 className="text-lg font-semibold mb-4">Оценка</h2>
-
           <form onSubmit={handleReview} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Баллы (максимум {maxPoints})
-              </label>
+              <label className="block text-sm text-white/70 mb-1.5">Баллы (максимум {maxPoints})</label>
               <input
                 type="number"
                 value={points}
@@ -262,33 +215,26 @@ export default function ReviewPage() {
                 min={0}
                 max={maxPoints}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-white/5 border border-white/15 rounded-xl text-white focus:outline-none focus:border-[#FF1493]"
               />
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Комментарий
-              </label>
+              <label className="block text-sm text-white/70 mb-1.5">Комментарий</label>
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 bg-white/5 border border-white/15 rounded-xl text-white focus:outline-none focus:border-[#FF1493]"
                 placeholder="Напиши обратную связь участнику..."
               />
             </div>
-
             {error && (
-              <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">
-                {error}
-              </div>
+              <div className="text-[#FF1493] text-sm bg-[#FF1493]/10 p-3 rounded-xl">{error}</div>
             )}
-
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-green-600 text-white py-2.5 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 transition"
+              className="w-full bg-[#FF1493] text-white py-3.5 rounded-xl font-semibold hover:bg-[#ff2d9e] disabled:opacity-50 transition"
             >
               {loading ? 'Сохраняем...' : isRedo ? 'Поставить новую оценку' : 'Поставить оценку'}
             </button>
