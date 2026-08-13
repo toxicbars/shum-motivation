@@ -105,13 +105,20 @@ export default async function ProgramPage({
 
             {unreviewedCount > 0 && (
               <div className="bg-[#FF1493]/10 border border-[#FF1493]/25 text-[#FF1493] rounded-xl px-5 py-3 mb-6">
-                Есть <strong>{unreviewedCount}</strong> {unreviewedCount === 1 ? 'работа' : unreviewedCount < 5 ? 'работы' : 'работ'} на проверке
+                Есть <strong>{unreviewedCount}</strong>{' '}
+                {unreviewedCount === 1 ? 'работа' : unreviewedCount < 5 ? 'работы' : 'работ'} на проверке
               </div>
             )}
 
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold">Задания</h2>
               <div className="flex gap-2">
+                <Link
+                  href={`/program/${id}/support`}
+                  className="bg-white/10 border border-white/15 px-4 py-2 rounded-xl text-sm font-medium hover:bg-white/15 transition"
+                >
+                  Поддержка
+                </Link>
                 <Link
                   href={`/program/${id}/results`}
                   className="bg-white/10 border border-white/15 px-4 py-2 rounded-xl text-sm font-medium hover:bg-white/15 transition"
@@ -166,7 +173,7 @@ export default async function ProgramPage({
         )}
 
         {!isModerator && (
-          <div className="grid gap-5 sm:grid-cols-2 max-w-2xl mx-auto mt-6">
+          <div className="grid gap-5 sm:grid-cols-3 max-w-3xl mx-auto mt-6">
             <Link
               href={`/program/${id}/todo`}
               className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center hover:bg-white/10 hover:border-[#FF1493]/40 transition"
@@ -183,6 +190,15 @@ export default async function ProgramPage({
               <div className="text-4xl mb-3">✅</div>
               <div className="text-xl font-bold mb-1">Выполненные</div>
               <p className="text-sm text-white/40">Сданные и проверенные работы</p>
+            </Link>
+
+            <Link
+              href={`/program/${id}/support`}
+              className="bg-white/5 border border-white/10 rounded-2xl p-8 text-center hover:bg-white/10 hover:border-[#FF1493]/40 transition"
+            >
+              <div className="text-4xl mb-3">💬</div>
+              <div className="text-xl font-bold mb-1">Поддержка</div>
+              <p className="text-sm text-white/40">Задать вопрос модераторам</p>
             </Link>
           </div>
         )}
