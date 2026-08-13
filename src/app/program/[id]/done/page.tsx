@@ -27,7 +27,6 @@ export default async function DonePage({
     redirect(`/program/${programId}`)
   }
 
-  // Получаем все сдачи пользователя
   const { data: submissions } = await supabase
     .from('submissions')
     .select(`
@@ -35,66 +34,40 @@ export default async function DonePage({
       status,
       submitted_at,
       task_id,
-      tasks (
-        id,
-        title,
-        max_points
-      ),
-      reviews (
-        points,
-        comment
-      )
+      tasks (id, title, max_points),
+      reviews (points, comment)
     `)
     .eq('user_id', user.id)
     .order('submitted_at', { ascending: false })
 
-  // Группируем по заданиям (берём последнюю сдачу по каждому заданию)
   const taskMap = new Map()
 
   submissions?.forEach((sub: any) => {
     if (!sub.tasks) return
     const taskId = sub.task_id
-
     if (!taskMap.has(taskId)) {
-      taskMap.set(taskId, {
-        task: sub.tasks,
-        submissions: [],
-      })
+      taskMap.set(taskId, { task: sub.tasks, submissions: [] })
     }
     taskMap.get(taskId).submissions.push(sub)
   })
 
   const items = Array.from(taskMap.values()).map((item: any) => {
     const subs = item.submissions
-    const lastSub = subs[0] // самая новая
+    const lastSub = subs[0]
     const review = lastSub.reviews?.[0]
     const isReviewed = lastSub.status === 'reviewed' && review
     const attempts = subs.length
-
-    // Можно пересдать: ровно 1 попытка + проверена + баллов меньше половины
     const canRedo =
-      attempts === 1 &&
-      isReviewed &&
-      review.points < item.task.max_points / 2
+      attempts === 1 && isReviewed && review.points < item.task.max_points / 2
 
-    return {
-      task: item.task,
-      lastSub,
-      review,
-      isReviewed,
-      attempts,
-      canRedo,
-    }
+    return { task: item.task, lastSub, review, isReviewed, attempts, canRedo }
   })
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b">
+    <div className="min-h-screen bg-[#26264A] text-white">
+      <header className="border-b border-white/10">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link
-            href={`/program/${programId}`}
-            className="text-gray-500 hover:text-gray-800"
-          >
+          <Link href={`/program/${programId}`} className="text-white/50 hover:text-white">
             ← Назад
           </Link>
           <h1 className="text-xl font-bold">Выполненные задания</h1>
@@ -103,55 +76,43 @@ export default async function DonePage({
 
       <main className="max-w-3xl mx-auto px-4 py-8">
         {items.length === 0 ? (
-          <div className="bg-white rounded-xl border border-dashed border-gray-300 p-10 text-center text-gray-500">
+          <div className="bg-white/5 border border-dashed border-white/15 rounded-2xl p-12 text-center text-white/40">
             Ты ещё ничего не сдавал
           </div>
         ) : (
           <div className="space-y-4">
             {items.map((item) => (
-              <div
-                key={item.task.id}
-                className="bg-white rounded-xl border border-gray-200 p-5"
-              >
+              <div key={item.task.id} className="bg-white/5 border border-white/10 rounded-2xl p-5">
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-semibold text-lg">{item.task.title}</h3>
                   <span
                     className={`text-xs px-2.5 py-1 rounded-full font-medium ${
                       item.canRedo
-                        ? 'bg-yellow-100 text-yellow-700'
+                        ? 'bg-yellow-500/20 text-yellow-400'
                         : item.isReviewed
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-blue-100 text-blue-700'
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'bg-blue-500/20 text-blue-400'
                     }`}
                   >
-                    {item.canRedo
-                      ? 'Можно пересдать'
-                      : item.isReviewed
-                      ? 'Проверено'
-                      : 'На проверке'}
+                    {item.canRedo ? 'Можно пересдать' : item.isReviewed ? 'Проверено' : 'На проверке'}
                   </span>
                 </div>
 
-                <div className="text-sm text-gray-500 mb-3">
-                  Попыток: {item.attempts} · Сдано:{' '}
-                  {new Date(item.lastSub.submitted_at).toLocaleString('ru-RU')}
+                <div className="text-sm text-white/40 mb-3">
+                  Попыток: {item.attempts} · {new Date(item.lastSub.submitted_at).toLocaleString('ru-RU')}
                 </div>
 
                 {item.isReviewed && item.review && (
-                  <div className="bg-green-50 rounded-lg p-4 mb-3">
-                    <div className="font-medium text-green-800">
-                      {item.review.points} баллов
-                    </div>
+                  <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 mb-3">
+                    <div className="font-medium text-green-400">{item.review.points} баллов</div>
                     {item.review.comment && (
-                      <p className="text-sm text-green-700 mt-1">
-                        {item.review.comment}
-                      </p>
+                      <p className="text-sm text-green-400/80 mt-1">{item.review.comment}</p>
                     )}
                   </div>
                 )}
 
                 {!item.isReviewed && (
-                  <div className="text-sm text-blue-700 bg-blue-50 rounded-lg p-3 mb-3">
+                  <div className="text-sm text-blue-400 bg-blue-500/10 rounded-xl p-3 mb-3">
                     Модератор ещё не проверил эту работу
                   </div>
                 )}
@@ -159,7 +120,7 @@ export default async function DonePage({
                 {item.canRedo && (
                   <Link
                     href={`/program/${programId}/tasks/${item.task.id}`}
-                    className="block w-full text-center bg-yellow-500 text-white py-2.5 rounded-lg font-medium hover:bg-yellow-600 transition"
+                    className="block w-full text-center bg-[#FF1493] text-white py-2.5 rounded-xl font-medium hover:bg-[#ff2d9e] transition"
                   >
                     Пересдать задание
                   </Link>
